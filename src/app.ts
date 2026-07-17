@@ -16,7 +16,7 @@ const app: Application = express();
 app.use(cors());
 
 app.use(cors({
-  origin: process.env.CORS_ORIGIN               //"http://192.168.0.10:5173"   // Replace with your frontend PC's IP and port
+  origin:"http://192.168.0.10:5173"             //"http://192.168.0.10:5173"   // Replace with your frontend PC's IP and port
 }));
 
 app.use(express.json());

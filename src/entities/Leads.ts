@@ -22,7 +22,10 @@ export class Leads {
   @Column({ type: "varchar", length: 150, unique: true })
   email!: string;
 
-  @Column({ name: "phone_number", type: "varchar", length: 20 })
+  @Column({ name: "country_code", type: "varchar", length: 5, default: "+91" })
+  countryCode!: string;
+
+  @Column({ name: "phone_number", type: "varchar", length: 15 })
   phoneNumber!: string;
 
   @Column({ type: "varchar", length: 150 })

@@ -21,11 +21,16 @@ export const createLeadSchema = z.object({
     .toLowerCase()
     .email("Invalid email address"),
 
-  phoneNumber: z
-    .string()
-    .trim()
-    .regex(/^[6-9]\d{9}$/, "Invalid phone number"),
+  countryCode: z
+  .string()
+  .trim()
+  .regex(/^\+\d{1,4}$/, "Invalid country code (e.g. +91)"),
 
+  phoneNumber: z
+  .string()
+  .trim()
+  .regex(/^[6-9]\d{9}$/, "Invalid phone number"),
+  
   project: z
     .string()
     .trim()

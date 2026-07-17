@@ -71,7 +71,7 @@ export const getAllEmployees = async (req: Request, res: Response) => {
 // Get Employee by empNo
 export const getEmployeeById = async (req: Request, res: Response) => {
   try {
-    const { empNo } = req.params;
+    const  empNo  = req.body.empNo;
 
     const employee = await employeeRepository.findOne({ where: { empNo } });
 
@@ -88,7 +88,7 @@ export const getEmployeeById = async (req: Request, res: Response) => {
 // Update Employee by empNo
 export const updateEmployeeById = async (req: Request, res: Response) => {
   try {
-    const { empNo } = req.params;
+    const  empNo  = req.body.empNo;
 
     const employee = await employeeRepository.findOne({ where: { empNo } });
 
@@ -117,7 +117,7 @@ export const updateEmployeeById = async (req: Request, res: Response) => {
 // Delete Employee by empNo
 export const deleteEmployeeById = async (req: Request, res: Response) => {
   try {
-    const { empNo } = req.params;
+   const  empNo  = req.body.empNo;
 
     const employee = await employeeRepository.findOne({ where: { empNo } });
 
@@ -138,7 +138,7 @@ export const deleteEmployeeById = async (req: Request, res: Response) => {
 // Update Employee Salary by empNo
 export const updateEmployeeSalaryById = async (req: Request, res: Response) => {
   try {
-    const { empNo } = req.params;
+    const  empNo  = req.body.empNo;
     const { salary } = req.body;
 
     if (salary === undefined || salary === null) {
@@ -165,7 +165,7 @@ export const updateEmployeeSalaryById = async (req: Request, res: Response) => {
 // Get Employees by Department
 export const getEmployeesByDepartment = async (req: Request, res: Response) => {
   try {
-    const { department } = req.params;
+    const  department  = req.body.department;
 
     const employees = await employeeRepository.find({
       where: { department: ILike(department) },
@@ -189,7 +189,7 @@ export const getEmployeesByDepartment = async (req: Request, res: Response) => {
 // Get Employees by Designation
 export const getEmployeesByDesignation = async (req: Request, res: Response) => {
   try {
-    const { designation } = req.params;
+    const  designation  = req.body.designation;
 
     const employees = await employeeRepository.find({
       where: { designation: ILike(designation) },

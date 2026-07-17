@@ -18,13 +18,13 @@ const router = Router();
 
 router.post("/create", uploadEmployeeDocuments, validateEmployee, checkEmployeeExists, createEmployee);
 router.get("/getAllEmployees", getAllEmployees);
-router.get("/getEmployeeById/:empNo", getEmployeeById);
-router.put("/updateEmployeeById/:empNo", uploadEmployeeDocuments, updateEmployeeById);
-router.delete("/deleteEmployeeById/:empNo", deleteEmployeeById);
-router.patch("/updateEmployeeSalaryById/:empNo", updateEmployeeSalaryById);
+router.post("/getEmployeeById", getEmployeeById);
+router.put("/updateEmployeeById", uploadEmployeeDocuments, updateEmployeeById);
+router.delete("/deleteEmployeeById", deleteEmployeeById);
+router.patch("/updateEmployeeSalaryById", updateEmployeeSalaryById);
 
-router.get("/getEmployeesByDepartment/:department", getEmployeesByDepartment);
-router.get("/getEmployeesByDesignation/:designation", getEmployeesByDesignation);
+router.post("/getEmployeesByDepartment", getEmployeesByDepartment);
+router.post("/getEmployeesByDesignation", getEmployeesByDesignation);
 
 
 // router.get("/getEmployeesByDepartment",getEmployeesByDepartment);
