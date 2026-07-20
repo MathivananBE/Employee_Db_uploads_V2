@@ -45,8 +45,8 @@ app.get("/health", async (_req: Request, res: Response) => {
 // --- Routes ---
 app.post("/api/admin/login", adminLogin);
 app.get("/api/home",auth);
-app.use("/api/employees", router);
-app.use("/api/leads",leadsRouter)
+app.use("/api/employees",auth, router);
+app.use("/api/leads",auth,leadsRouter)
 
 
 //app.use("/emp",router);

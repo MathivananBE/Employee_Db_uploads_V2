@@ -6,15 +6,44 @@ import { ILike } from "typeorm";
 
 const leadRepository = AppDataSource.getRepository(Leads);
 
+const normalizeLeadUpdatePayload = (body: Record<string, any> = {}) => {
+  const normalized: Record<string, any> = {};
+  const aliases: Record<string, string> = {
+    first_name: "firstName",
+    last_name: "lastName",
+    country_code: "countryCode",
+    phone_number: "phoneNumber",
+    budget_range: "budgetRange",
+    configuration_type: "configurationType",
+    property_type: "propertyType",
+    pan_card: "panCard",
+    aadhar_card: "aadharCard",
+    driving_license: "drivingLicense",
+    is_active: "isActive",
+  };
+
+  Object.entries(body).forEach(([key, value]) => {
+    if (value === undefined || value === null) return;
+
+    const normalizedKey = aliases[key] ?? key;
+    normalized[normalizedKey] = typeof value === "string" ? value.trim() : value;
+  });
+
+  if (typeof normalized.email === "string") {
+    normalized.email = normalized.email.trim().toLowerCase();
+  }
+
+  return normalized;
+};
+
 export const createLead = async (req: Request, res: Response) => {
   try {
     const files = req.files as { [fieldname: string]: Express.Multer.File[] } | undefined;
+    const email = (req.body.email || "").toString().trim().toLowerCase();
 
     // Buffers are only written to disk here, after validateLead + checkLeadExists have passed.
-    //const documentPaths = saveLeadFiles(files, req.body.phoneNumber);
-    // combine countryCode + phoneNumber so folder names don't collide across countries
-  const folderKey = `${req.body.countryCode}${req.body.phoneNumber}`.replace(/\+/g, "");
-  const documentPaths = saveLeadFiles(files, folderKey);
+    const folderKey = email || "lead";
+    const documentPaths = saveLeadFiles(files, folderKey);
  // const budget = req.body.budgetRange + "00000";
 
     const lead = leadRepository.create({
@@ -107,7 +136,15 @@ export const getLeadById = async (req: Request, res: Response) => {
 
 export const updateLeadByEmail = async (req: Request, res: Response) => {
   try {
-    const email = req.body.email;
+    const updatePayload = normalizeLeadUpdatePayload(req.body as Record<string, any>);
+    const email = updatePayload.email;
+
+    if (!email) {
+      return res.status(400).json({
+        success: false,
+        message: "Email is required",
+      });
+    }
 
     const lead = await leadRepository.findOne({
       where: { email },
@@ -120,26 +157,20 @@ export const updateLeadByEmail = async (req: Request, res: Response) => {
       });
     }
 
-    /*
-    // Convert budgetRange to budget
-    if (lead.budgetRange) {
-      lead.budgetRange = (lead.budgetRange) + ("0000")
-    }
+    const { email: _email, ...leadData } = updatePayload;
 
-    */
+    leadRepository.merge(lead, leadData);
 
-    // Update normal fields
-    leadRepository.merge(lead, req.body);
-
-    // Save uploaded files if any
-    const folderKey = `${lead.countryCode}${lead.phoneNumber}`.replace(/\+/g, "");
+    const folderKey = (leadData.email ?? lead.email ?? "lead").toString().trim().toLowerCase() || "lead";
 
     const documentPaths = saveLeadFiles(
       req.files as { [fieldname: string]: Express.Multer.File[] } | undefined,
       folderKey
     );
 
-    leadRepository.merge(lead, documentPaths);
+    if (Object.keys(documentPaths).length > 0) {
+      leadRepository.merge(lead, documentPaths);
+    }
 
     const updatedLead = await leadRepository.save(lead);
 

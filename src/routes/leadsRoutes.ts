@@ -8,7 +8,7 @@ const leadsRouter = Router();
 
 leadsRouter.post("/create", uploadLeadDocuments, validateLead, checkLeadExists, createLead);
 leadsRouter.get("/getAllLeads", getAllLeads);
-leadsRouter.put("/UpdateLeadByEmail", updateLeadByEmail);
+leadsRouter.put("/UpdateLeadByEmail", uploadLeadDocuments, updateLeadByEmail);
 leadsRouter.delete("/deleteLeadByEmail", deleteLeadByEmail);
 
 

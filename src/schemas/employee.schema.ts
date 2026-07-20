@@ -69,6 +69,7 @@ export const createEmployeeSchema = z.object({
 
   gender: z.enum(["Male","male","Female","female", "Other"]),
 
+ /*
   joiningDate: z
   .string()
   .regex(/^\d{2}-\d{2}-\d{4}$/, "Date must be in DD-MM-YYYY format")
@@ -97,6 +98,9 @@ export const createEmployeeSchema = z.object({
   .refine((date) => date <= new Date(), {
     message: "Joining date cannot be in the future",
   }),
+  
+  */
+  
 
   address: z
     .string()
