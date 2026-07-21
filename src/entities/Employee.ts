@@ -12,8 +12,8 @@ import {
 @Check(`"age" > 18`)
 @Check(`"salary" >= 0`)
 export class EmployeesDetails {
-  @PrimaryGeneratedColumn()
-  id!: number;
+  @PrimaryGeneratedColumn("uuid")
+  id!: string;
 
   @Index({ unique: true })
   @Column({ name: "emp_no", type: "varchar", length: 30, unique: true })

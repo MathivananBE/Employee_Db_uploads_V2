@@ -10,13 +10,14 @@ import router from "./routes/employeeRoutes";
 import { auth } from "./middleware/auth";
 import { adminLogin } from "./controllers/adminLogin";
 import leadsRouter from "./routes/leadsRoutes";
+import categoryRoutes from "./routes/categoryRoutes";
 
 const app: Application = express();
 
 app.use(cors());
 
 app.use(cors({
-  origin:"http://192.168.0.10:5173"             //"http://192.168.0.10:5173"   // Replace with your frontend PC's IP and port
+  origin:"http://192.168.0.10:5174"             //"http://192.168.0.10:5173"   // Replace with your frontend PC's IP and port
 }));
 
 app.use(express.json());
@@ -45,8 +46,12 @@ app.get("/health", async (_req: Request, res: Response) => {
 // --- Routes ---
 app.post("/api/admin/login", adminLogin);
 app.get("/api/home",auth);
-app.use("/api/employees",auth, router);
-app.use("/api/leads",auth,leadsRouter)
+app.use("/api/employees", router);
+app.use("/api/leads",leadsRouter)
+
+
+//================category Routes===============
+app.use("/api",categoryRoutes);
 
 
 //app.use("/emp",router);

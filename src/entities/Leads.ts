@@ -9,8 +9,8 @@ import {
 
 @Entity({ name: "Leads" })
 export class Leads {
-  @PrimaryGeneratedColumn()
-  id!: number;
+  @PrimaryGeneratedColumn("uuid")
+  id!: String;
 
   @Column({ name: "first_name", type: "varchar", length: 100 })
   firstName!: string;

@@ -3,6 +3,8 @@ import { DataSource } from "typeorm";
 import { env, validateEnv } from "./env";
 import { EmployeesDetails } from "../entities/Employee"; 
 import Leads from "../entities/Leads";
+import { Category } from "../entities/categories";
+import { SubCategory } from "../entities/subCategory";
 
 validateEnv();
 
@@ -18,6 +20,8 @@ export const AppDataSource = new DataSource({
     entities: [
     EmployeesDetails,
     Leads,
+    Category,
+    SubCategory
   ],
   migrations: [__dirname + "/../migrations/*.{ts,js}"],
   subscribers: [],
