@@ -214,116 +214,6 @@ export const updateLeadByEmail = async (req: Request, res: Response) => {
 
 
 
-
-// Get Leads by Project
-export const getLeadsByProject = async (req: Request, res: Response) => {
-  try {
-    const project = req.body.project;
-
-    const leads = await leadRepository.find({
-      where: { project: ILike(project) },
-      relations: SUBCATEGORY_RELATIONS,
-    });
-
-    if (leads.length === 0) {
-      return res.status(404).json({
-        success: false,
-        message: `No leads found for project '${project}'.`,
-      });
-    }
-
-    console.log(`Fetched ${leads.length} leads for project '${project}'.`);
-
-    return res.status(200).json({ success: true, count: leads.length, data: formatLeadsResponse(leads) });
-  } catch (error) {
-    console.error("Error fetching leads by project:", error);
-    return res.status(500).json({ success: false, message: "Failed to fetch leads by project" });
-  }
-};
-
-// Get Leads by Location
-export const getLeadsByLocation = async (req: Request, res: Response) => {
-  try {
-    const location = req.body.location;
-
-    const leads = await leadRepository.find({
-      where: { location: ILike(location) },
-      relations: SUBCATEGORY_RELATIONS,
-    });
-
-    if (leads.length === 0) {
-      return res.status(404).json({
-        success: false,
-        message: `No leads found for location '${location}'.`,
-      });
-    }
-
-    console.log(`Fetched ${leads.length} leads for location '${location}'.`);
-
-    return res.status(200).json({ success: true, count: leads.length, data: formatLeadsResponse(leads) });
-  } catch (error) {
-    console.error("Error fetching leads by location:", error);
-    return res.status(500).json({ success: false, message: "Failed to fetch leads by location" });
-  }
-};
-
-// Get Leads by Configuration Type
-export const getLeadsByConfiguration = async (req: Request, res: Response) => {
-  try {
-    const configurationType = req.body.configurationType;
-
-    const leads = await leadRepository.find({
-      where: { configurationType: ILike(configurationType) },
-      relations: SUBCATEGORY_RELATIONS,
-    });
-
-    if (leads.length === 0) {
-      return res.status(404).json({
-        success: false,
-        message: `No leads found with configuration type '${configurationType}'.`,
-      });
-    }
-
-    console.log(`Fetched ${leads.length} leads with configuration type '${configurationType}'.`);
-
-    return res.status(200).json({ success: true, count: leads.length, data: formatLeadsResponse(leads) });
-  } catch (error) {
-    console.error("Error fetching leads by configuration type:", error);
-    return res.status(500).json({ success: false, message: "Failed to fetch leads by configuration type" });
-  }
-};
-
-// Get Leads by Property Type
-export const getLeadsByPropertyType = async (req: Request, res: Response) => {
-  try {
-    const propertyType = req.body.propertyType;
-
-    const leads = await leadRepository.find({
-      where: { propertyType: ILike(propertyType) },
-      relations: SUBCATEGORY_RELATIONS,
-    });
-
-    if (leads.length === 0) {
-      return res.status(404).json({
-        success: false,
-        message: `No leads found with property type '${propertyType}'.`,
-      });
-    }
-
-    console.log(`Fetched ${leads.length} leads with property type '${propertyType}'.`);
-
-    return res.status(200).json({ success: true, count: leads.length, data: formatLeadsResponse(leads) });
-  } catch (error) {
-    console.error("Error fetching leads by property type:", error);
-    return res.status(500).json({ success: false, message: "Failed to fetch leads by property type" });
-  }
-};
-
-
-
-
-
-
 //
 
 
@@ -440,8 +330,6 @@ export const searchLeads = async (req: Request, res: Response) => {
     });
   }
 };
-
-//======================================updateLeadCategory===========================================
 
 
 
