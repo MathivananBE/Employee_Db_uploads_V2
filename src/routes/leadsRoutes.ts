@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { uploadLeadDocuments } from "../middleware/LeadsUploads";
-import { createLead, getAllLeads, updateLeadByEmail, deleteLeadByEmail,getLeadsByProject,getLeadsByLocation,getLeadsByConfiguration,getLeadsByPropertyType } from "../controllers/LeadsController";
+import { createLead, getAllLeads, updateLeadByEmail, deleteLeadByEmail, getLeadsByProject, getLeadsByLocation, getLeadsByConfiguration, getLeadsByPropertyType, updateLeadCategory } from "../controllers/LeadsController";
 import { validateLead } from "../middleware/validateLeads";
 import { checkLeadExists } from "../middleware/checkLeadExists";
 
@@ -17,5 +17,10 @@ leadsRouter.post("/getLeadsByProject", getLeadsByProject);
 leadsRouter.post("/getLeadsByLocation", getLeadsByLocation);
 leadsRouter.post("/getLeadsByConfiguration", getLeadsByConfiguration);
 leadsRouter.post("/getLeadsByPropertyType", getLeadsByPropertyType);
+
+
+
+leadsRouter.post("/updateLeadCategory", updateLeadCategory);
+
 
 export default leadsRouter;

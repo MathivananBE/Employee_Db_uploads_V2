@@ -1,0 +1,18 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+const express_1 = require("express");
+const LeadsUploads_1 = require("../middleware/LeadsUploads");
+const LeadsController_1 = require("../controllers/LeadsController");
+const validateLeads_1 = require("../middleware/validateLeads");
+const checkLeadExists_1 = require("../middleware/checkLeadExists");
+const leadsRouter = (0, express_1.Router)();
+leadsRouter.post("/create", LeadsUploads_1.uploadLeadDocuments, validateLeads_1.validateLead, checkLeadExists_1.checkLeadExists, LeadsController_1.createLead);
+leadsRouter.get("/getAllLeads", LeadsController_1.getAllLeads);
+leadsRouter.put("/UpdateLeadByEmail", LeadsUploads_1.uploadLeadDocuments, LeadsController_1.updateLeadByEmail);
+leadsRouter.delete("/deleteLeadByEmail", LeadsController_1.deleteLeadByEmail);
+leadsRouter.post("/getLeadsByProject", LeadsController_1.getLeadsByProject);
+leadsRouter.post("/getLeadsByLocation", LeadsController_1.getLeadsByLocation);
+leadsRouter.post("/getLeadsByConfiguration", LeadsController_1.getLeadsByConfiguration);
+leadsRouter.post("/getLeadsByPropertyType", LeadsController_1.getLeadsByPropertyType);
+leadsRouter.post("/updateLeadCategory", LeadsController_1.updateLeadCategory);
+exports.default = leadsRouter;

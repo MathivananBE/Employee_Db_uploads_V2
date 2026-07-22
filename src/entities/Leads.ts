@@ -5,7 +5,11 @@ import {
   CreateDateColumn,
   UpdateDateColumn,
   Index,
+  ManyToOne,
+  JoinColumn
 } from "typeorm";
+import { Category } from "./categories";
+import { SubCategory } from "./subCategory";
 
 @Entity({ name: "Leads" })
 export class Leads {
@@ -42,6 +46,14 @@ export class Leads {
 
   @Column({ name: "property_type", type: "varchar", length: 100 })
   propertyType!: string;
+
+   @ManyToOne(() => Category, (category) => category.leads)
+   @JoinColumn({ name: "category_id" })
+   category!: Category;
+
+   @ManyToOne(() => SubCategory)
+   @JoinColumn({ name: "subcategory_id" })
+   subCategory!: SubCategory;
 
   // ---------- Document Paths ----------
 

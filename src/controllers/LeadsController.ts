@@ -3,6 +3,9 @@ import AppDataSource from "../config/dataSource";
 import Leads from "../entities/Leads";
 import { saveLeadFiles } from "../config/leadsConfig";
 import { ILike } from "typeorm";
+import { Category } from "../entities/categories";
+import { SubCategory } from "../entities/subCategory";
+
 
 const leadRepository = AppDataSource.getRepository(Leads);
 
@@ -330,4 +333,77 @@ export const getLeadsByPropertyType = async (req: Request, res: Response) => {
     console.error("Error fetching leads by property type:", error);
     return res.status(500).json({ success: false, message: "Failed to fetch leads by property type" });
   }
+};
+
+
+
+//======================================updateLeadCategory===========================================
+
+
+export const updateLeadCategory = async (req: Request, res: Response) => {
+
+    const {leadId, categoryId, subCategoryId } = req.body;
+
+    const leadRepo = AppDataSource.getRepository(Leads);
+
+    const categoryRepo = AppDataSource.getRepository(Category);
+
+    const subRepo = AppDataSource.getRepository(SubCategory);
+
+    const lead = await leadRepo.findOne({
+        where: { id: leadId }
+    });
+
+    if (!lead) {
+
+        return res.status(404).json({
+            message: "Lead not found"
+        });
+
+    }
+
+    const category = await categoryRepo.findOne({
+        where: { id: categoryId }
+    });
+
+    if (!category) {
+
+        return res.status(404).json({
+            message: "Category not found"
+        });
+
+    }
+
+    const subCategory = await subRepo.findOne({
+        where: { id: subCategoryId },
+        relations: { category: true }
+    });
+
+    if (!subCategory) {
+
+        return res.status(404).json({
+            message: "SubCategory not found"
+        });
+
+    }
+
+    if (subCategory.category.id !== category.id) {
+
+        return res.status(400).json({
+            message: "SubCategory does not belong to selected category"
+        });
+
+    }
+
+    lead.category = category;
+    lead.subCategory = subCategory;
+
+    await leadRepo.save(lead);
+
+    return res.json({
+        success: true,
+        message: "Lead updated successfully",
+        data: lead
+    });
+
 };

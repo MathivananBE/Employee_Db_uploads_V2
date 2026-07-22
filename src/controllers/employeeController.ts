@@ -29,7 +29,7 @@ const handleError = (res: Response, error: any, fallbackMessage: string) => {
 };
 
 // Create Employee
- export const createEmployee = async (req: Request, res: Response) => {
+ export const  createEmployee = async (req: Request, res: Response) => {
   try {
     // Get uploaded file paths (e.g. resume, marksheets, ID docs)
     const hashedPassword = await bcrypt.hash(req.body.password, 10);
