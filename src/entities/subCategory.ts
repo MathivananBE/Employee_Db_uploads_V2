@@ -6,8 +6,10 @@ import {
   JoinColumn,
   CreateDateColumn,
   UpdateDateColumn,
+  OneToMany
 } from "typeorm";
 import { Category } from "./categories";
+import { Leads } from "./Leads";
 
 @Entity("sub_categories")
 export class SubCategory {
@@ -28,6 +30,9 @@ export class SubCategory {
 
   @Column({ default: true })
   status!: boolean;
+
+  @OneToMany(() => Leads, (lead) => lead.subCategory)
+  leads!: Leads[];
 
   @CreateDateColumn()
   createdAt!: Date;

@@ -3,11 +3,28 @@ import AppDataSource from "../config/dataSource";
 import Leads from "../entities/Leads";
 import { saveLeadFiles } from "../config/leadsConfig";
 import { ILike } from "typeorm";
-import { Category } from "../entities/categories";
 import { SubCategory } from "../entities/subCategory";
 
 
 const leadRepository = AppDataSource.getRepository(Leads);
+
+// Leads only store a subcategory_id FK. Category info is derived through
+// SubCategory -> Category and flattened onto the response here.
+const SUBCATEGORY_RELATIONS = { subCategory: { category: true } };
+
+const formatLeadResponse = (lead: Leads) => {
+  const { subCategory, ...rest } = lead as any;
+
+  return {
+    ...rest,
+    subCategoryId: subCategory?.id ?? null,
+    subCategoryName: subCategory?.name ?? null,
+    categoryId: subCategory?.category?.id ?? null,
+    categoryName: subCategory?.category?.name ?? null,
+  };
+};
+
+const formatLeadsResponse = (leads: Leads[]) => leads.map(formatLeadResponse);
 
 const normalizeLeadUpdatePayload = (body: Record<string, any> = {}) => {
   const normalized: Record<string, any> = {};
@@ -80,6 +97,7 @@ export const createLead = async (req: Request, res: Response) => {
 export const getAllLeads = async (req: Request, res: Response) => {
   try {
     const leads = await leadRepository.find({
+      relations: SUBCATEGORY_RELATIONS,
       order: {
         id: "DESC",
       },
@@ -88,7 +106,7 @@ export const getAllLeads = async (req: Request, res: Response) => {
     return res.status(200).json({
       success: true,
       count: leads.length,
-      data: leads,
+      data: formatLeadsResponse(leads),
     });
   } catch (error) {
     console.log(error);
@@ -108,6 +126,7 @@ export const getLeadById = async (req: Request, res: Response) => {
 
     const lead = await leadRepository.findOne({
       where: { email },
+      relations: SUBCATEGORY_RELATIONS,
     });
 
     if (!lead) {
@@ -119,7 +138,7 @@ export const getLeadById = async (req: Request, res: Response) => {
 
     return res.status(200).json({
       success: true,
-      data: lead,
+      data: formatLeadResponse(lead),
     });
   } catch (error) {
     console.log(error);
@@ -242,6 +261,7 @@ export const getLeadsByProject = async (req: Request, res: Response) => {
 
     const leads = await leadRepository.find({
       where: { project: ILike(project) },
+      relations: SUBCATEGORY_RELATIONS,
     });
 
     if (leads.length === 0) {
@@ -253,7 +273,7 @@ export const getLeadsByProject = async (req: Request, res: Response) => {
 
     console.log(`Fetched ${leads.length} leads for project '${project}'.`);
 
-    return res.status(200).json({ success: true, count: leads.length, data: leads });
+    return res.status(200).json({ success: true, count: leads.length, data: formatLeadsResponse(leads) });
   } catch (error) {
     console.error("Error fetching leads by project:", error);
     return res.status(500).json({ success: false, message: "Failed to fetch leads by project" });
@@ -267,6 +287,7 @@ export const getLeadsByLocation = async (req: Request, res: Response) => {
 
     const leads = await leadRepository.find({
       where: { location: ILike(location) },
+      relations: SUBCATEGORY_RELATIONS,
     });
 
     if (leads.length === 0) {
@@ -278,7 +299,7 @@ export const getLeadsByLocation = async (req: Request, res: Response) => {
 
     console.log(`Fetched ${leads.length} leads for location '${location}'.`);
 
-    return res.status(200).json({ success: true, count: leads.length, data: leads });
+    return res.status(200).json({ success: true, count: leads.length, data: formatLeadsResponse(leads) });
   } catch (error) {
     console.error("Error fetching leads by location:", error);
     return res.status(500).json({ success: false, message: "Failed to fetch leads by location" });
@@ -292,6 +313,7 @@ export const getLeadsByConfiguration = async (req: Request, res: Response) => {
 
     const leads = await leadRepository.find({
       where: { configurationType: ILike(configurationType) },
+      relations: SUBCATEGORY_RELATIONS,
     });
 
     if (leads.length === 0) {
@@ -303,7 +325,7 @@ export const getLeadsByConfiguration = async (req: Request, res: Response) => {
 
     console.log(`Fetched ${leads.length} leads with configuration type '${configurationType}'.`);
 
-    return res.status(200).json({ success: true, count: leads.length, data: leads });
+    return res.status(200).json({ success: true, count: leads.length, data: formatLeadsResponse(leads) });
   } catch (error) {
     console.error("Error fetching leads by configuration type:", error);
     return res.status(500).json({ success: false, message: "Failed to fetch leads by configuration type" });
@@ -317,6 +339,7 @@ export const getLeadsByPropertyType = async (req: Request, res: Response) => {
 
     const leads = await leadRepository.find({
       where: { propertyType: ILike(propertyType) },
+      relations: SUBCATEGORY_RELATIONS,
     });
 
     if (leads.length === 0) {
@@ -328,7 +351,7 @@ export const getLeadsByPropertyType = async (req: Request, res: Response) => {
 
     console.log(`Fetched ${leads.length} leads with property type '${propertyType}'.`);
 
-    return res.status(200).json({ success: true, count: leads.length, data: leads });
+    return res.status(200).json({ success: true, count: leads.length, data: formatLeadsResponse(leads) });
   } catch (error) {
     console.error("Error fetching leads by property type:", error);
     return res.status(500).json({ success: false, message: "Failed to fetch leads by property type" });
@@ -337,16 +360,137 @@ export const getLeadsByPropertyType = async (req: Request, res: Response) => {
 
 
 
+
+
+
+//
+
+
+//======================================searchLeads===========================================
+// Dynamic search: any combination of name, email, phoneNumber, project,
+// location, configurationType, propertyType.
+// Only filters that are actually provided get added to the query.
+// Fixed page size of 20 results per page.
+const LEADS_PAGE_SIZE = 20;
+
+export const searchLeads = async (req: Request, res: Response) => {
+  try {
+    const {
+      name,
+      email,
+      phoneNumber,
+      project,
+      location,
+      configurationType,
+      propertyType,
+      page = 1,
+    } = req.body;
+
+    const pageNum = Math.max(1, parseInt(page, 10) || 1);
+
+    const query = leadRepository
+      .createQueryBuilder("lead")
+      .leftJoinAndSelect("lead.subCategory", "subCategory")
+      .leftJoinAndSelect("subCategory.category", "category");
+
+    if (name && name.toString().trim()) {
+      const term = `%${name.toString().trim()}%`;
+      query.andWhere(
+        "(lead.firstName ILIKE :name OR lead.lastName ILIKE :name OR CONCAT(lead.firstName, ' ', lead.lastName) ILIKE :name)",
+        { name: term }
+      );
+    }
+
+    if (email && email.toString().trim()) {
+      query.andWhere("lead.email ILIKE :email", {
+        email: `%${email.toString().trim()}%`,
+      });
+    }
+
+    if (phoneNumber && phoneNumber.toString().trim()) {
+      query.andWhere("lead.phoneNumber ILIKE :phoneNumber", {
+        phoneNumber: `%${phoneNumber.toString().trim()}%`,
+      });
+    }
+
+    if (project && project.toString().trim()) {
+      query.andWhere("lead.project ILIKE :project", {
+        project: `%${project.toString().trim()}%`,
+      });
+    }
+
+    if (location && location.toString().trim()) {
+      query.andWhere("lead.location ILIKE :location", {
+        location: `%${location.toString().trim()}%`,
+      });
+    }
+
+    if (configurationType && configurationType.toString().trim()) {
+      query.andWhere("lead.configurationType ILIKE :configurationType", {
+        configurationType: `%${configurationType.toString().trim()}%`,
+      });
+    }
+
+    if (propertyType && propertyType.toString().trim()) {
+      query.andWhere("lead.propertyType ILIKE :propertyType", {
+        propertyType: `%${propertyType.toString().trim()}%`,
+      });
+    }
+
+    const noFiltersProvided =
+      !name && !email && !phoneNumber && !project && !location && !configurationType && !propertyType;
+
+    if (noFiltersProvided) {
+      return res.status(400).json({
+        success: false,
+        message:
+          "Provide at least one of name, email, phoneNumber, project, location, configurationType, or propertyType to search",
+      });
+    }
+
+    query
+      .orderBy("lead.createdAt", "DESC")
+      .skip((pageNum - 1) * LEADS_PAGE_SIZE)
+      .take(LEADS_PAGE_SIZE);
+
+    const [leads, total] = await query.getManyAndCount();
+
+    if (leads.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: "No leads found matching the search criteria",
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      count: leads.length,
+      total,
+      page: pageNum,
+      limit: LEADS_PAGE_SIZE,
+      totalPages: Math.ceil(total / LEADS_PAGE_SIZE),
+      data: formatLeadsResponse(leads),
+    });
+  } catch (error) {
+    console.error("Error searching leads:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Failed to search leads",
+    });
+  }
+};
+
 //======================================updateLeadCategory===========================================
 
 
+
+//======================================updateLeadCategory===========================================
+
 export const updateLeadCategory = async (req: Request, res: Response) => {
 
-    const {leadId, categoryId, subCategoryId } = req.body;
+    const { leadId, subCategoryId } = req.body;
 
     const leadRepo = AppDataSource.getRepository(Leads);
-
-    const categoryRepo = AppDataSource.getRepository(Category);
 
     const subRepo = AppDataSource.getRepository(SubCategory);
 
@@ -362,18 +506,8 @@ export const updateLeadCategory = async (req: Request, res: Response) => {
 
     }
 
-    const category = await categoryRepo.findOne({
-        where: { id: categoryId }
-    });
-
-    if (!category) {
-
-        return res.status(404).json({
-            message: "Category not found"
-        });
-
-    }
-
+    // Category is derived through SubCategory -> Category; only the
+    // subcategory_id FK is stored on the lead.
     const subCategory = await subRepo.findOne({
         where: { id: subCategoryId },
         relations: { category: true }
@@ -387,15 +521,6 @@ export const updateLeadCategory = async (req: Request, res: Response) => {
 
     }
 
-    if (subCategory.category.id !== category.id) {
-
-        return res.status(400).json({
-            message: "SubCategory does not belong to selected category"
-        });
-
-    }
-
-    lead.category = category;
     lead.subCategory = subCategory;
 
     await leadRepo.save(lead);
@@ -403,7 +528,7 @@ export const updateLeadCategory = async (req: Request, res: Response) => {
     return res.json({
         success: true,
         message: "Lead updated successfully",
-        data: lead
+        data: formatLeadResponse(lead)
     });
 
 };

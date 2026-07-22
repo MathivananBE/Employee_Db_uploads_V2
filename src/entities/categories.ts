@@ -7,7 +7,6 @@ import {
   UpdateDateColumn,
 } from "typeorm";
 import { SubCategory } from "./subCategory";
-import { Leads } from "./Leads";
 
 @Entity("categories")
 export class Category {
@@ -25,9 +24,6 @@ export class Category {
 
   @OneToMany(() => SubCategory, (sub) => sub.category)
   subCategories!: SubCategory[];
-
-  @OneToMany(() => Leads, (lead) => lead.category)
-  leads!: Leads[];
 
   @CreateDateColumn()
   createdAt!: Date;
