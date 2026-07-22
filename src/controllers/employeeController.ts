@@ -114,27 +114,6 @@ export const updateEmployeeById = async (req: Request, res: Response) => {
   }
 };
 
-// Delete Employee by empNo
-export const deleteEmployeeById = async (req: Request, res: Response) => {
-  try {
-   const  empNo  = req.body.empNo;
-
-    const employee = await employeeRepository.findOne({ where: { empNo } });
-
-    if (!employee) {
-      return res.status(404).json({ success: false, message: "Employee not found" });
-    }
-
-    await employeeRepository.remove(employee);
-
-    console.log(`Deleting employee with empNo: ${empNo}`);
-
-    return res.status(200).json({ success: true, message: "Employee deleted successfully" });
-  } catch (error) {
-    return handleError(res, error, "Error deleting employee");
-  }
-};
-
 // Update Employee Salary by empNo
 export const updateEmployeeSalaryById = async (req: Request, res: Response) => {
   try {

@@ -211,45 +211,6 @@ export const updateLeadByEmail = async (req: Request, res: Response) => {
   }
 };
 
-export const deleteLeadByEmail = async (req: Request, res: Response) => {
-  try {
-    const email = req.body.email;
-
-    if (!email) {
-      return res.status(400).json({
-        success: false,
-        message: "Email is required",
-      });
-    }
-
-    const lead = await leadRepository.findOne({
-      where: { email },
-    });
-
-    if (!lead) {
-      return res.status(404).json({
-        success: false,
-        message: "Lead not found",
-      });
-    }
-
-    await leadRepository.remove(lead);
-
-    return res.status(200).json({
-      success: true,
-      message: "Lead deleted successfully",
-    });
-  } catch (error) {
-    console.error("Delete Lead Error:", error);
-
-    return res.status(500).json({
-      success: false,
-      message: "Failed to delete lead",
-    });
-  }
-};
-
-
 
 
 
@@ -486,7 +447,7 @@ export const searchLeads = async (req: Request, res: Response) => {
 
 //======================================updateLeadCategory===========================================
 
-export const updateLeadCategory = async (req: Request, res: Response) => {
+export const updateLeadsubCategory = async (req: Request, res: Response) => {
 
     const { leadId, subCategoryId } = req.body;
 

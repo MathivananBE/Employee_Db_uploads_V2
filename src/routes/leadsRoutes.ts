@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { uploadLeadDocuments } from "../middleware/LeadsUploads";
-import { createLead, getAllLeads, updateLeadByEmail, deleteLeadByEmail, getLeadsByProject, getLeadsByLocation, getLeadsByConfiguration, getLeadsByPropertyType, updateLeadCategory, searchLeads } from "../controllers/LeadsController";
+import { createLead, getAllLeads, updateLeadByEmail, getLeadsByProject, getLeadsByLocation, getLeadsByConfiguration, getLeadsByPropertyType, updateLeadsubCategory, searchLeads } from "../controllers/LeadsController";
 import { validateLead } from "../middleware/validateLeads";
 import { checkLeadExists } from "../middleware/checkLeadExists";
 
@@ -9,7 +9,6 @@ const leadsRouter = Router();
 leadsRouter.post("/create", uploadLeadDocuments, validateLead, checkLeadExists, createLead);
 leadsRouter.get("/getAllLeads", getAllLeads);
 leadsRouter.put("/UpdateLeadByEmail", uploadLeadDocuments, updateLeadByEmail);
-leadsRouter.delete("/deleteLeadByEmail", deleteLeadByEmail);
 
 
 
@@ -18,11 +17,13 @@ leadsRouter.post("/getLeadsByLocation", getLeadsByLocation);
 leadsRouter.post("/getLeadsByConfiguration", getLeadsByConfiguration);
 leadsRouter.post("/getLeadsByPropertyType", getLeadsByPropertyType);
 
+
+
 leadsRouter.post("/searchLeads", searchLeads);
 
 
 
-leadsRouter.post("/updateLeadCategory", updateLeadCategory);
+leadsRouter.post("/updateLeadsubCategory", updateLeadsubCategory);
 
 
 export default leadsRouter;

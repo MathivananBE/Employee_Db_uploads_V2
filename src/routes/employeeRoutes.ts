@@ -4,7 +4,6 @@ import {
   getAllEmployees,
   getEmployeeById,
   updateEmployeeById,
-  deleteEmployeeById,
   updateEmployeeSalaryById,
   getEmployeesByDepartment,
   getEmployeesByDesignation
@@ -20,7 +19,6 @@ router.post("/create", uploadEmployeeDocuments, validateEmployee, checkEmployeeE
 router.get("/getAllEmployees", getAllEmployees);
 router.post("/getEmployeeById", getEmployeeById);
 router.put("/updateEmployeeById", uploadEmployeeDocuments, updateEmployeeById);
-router.delete("/deleteEmployeeById", deleteEmployeeById);
 router.patch("/updateEmployeeSalaryById", updateEmployeeSalaryById);
 
 router.post("/getEmployeesByDepartment", getEmployeesByDepartment);
