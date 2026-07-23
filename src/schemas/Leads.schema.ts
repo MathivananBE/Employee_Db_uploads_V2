@@ -71,6 +71,11 @@ export const createLeadSchema = z.object({
         }),
       }
     ),
+
+     subCategoryId: z
+    .string()
+    .trim()
+    .uuid("Invalid subCategoryId"),
 });
 
 export type CreateLeadInput = z.infer<typeof createLeadSchema>;

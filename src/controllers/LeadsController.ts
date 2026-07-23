@@ -2,8 +2,8 @@ import { Request, Response } from "express";
 import AppDataSource from "../config/dataSource";
 import Leads from "../entities/Leads";
 import { saveLeadFiles } from "../config/leadsConfig";
-import { ILike } from "typeorm";
 import { SubCategory } from "../entities/subCategory";
+import { ILike, DeepPartial } from "typeorm";
 
 
 const leadRepository = AppDataSource.getRepository(Leads);
@@ -60,39 +60,55 @@ export const createLead = async (req: Request, res: Response) => {
   try {
     const files = req.files as { [fieldname: string]: Express.Multer.File[] } | undefined;
     const email = (req.body.email || "").toString().trim().toLowerCase();
+    const { subCategoryId, ...leadFields } = req.body;
+
+    const subRepo = AppDataSource.getRepository(SubCategory);
+    const subCategory = await subRepo.findOne({
+      where: { id: subCategoryId },
+      relations: { category: true },
+    });
+
+    if (!subCategory) {
+      return res.status(404).json({
+        success: false,
+        message: "SubCategory not found",
+      });
+    }
 
     // Buffers are only written to disk here, after validateLead + checkLeadExists have passed.
     const folderKey = email || "lead";
     const documentPaths = saveLeadFiles(files, folderKey);
- // const budget = req.body.budgetRange + "00000";
 
-    const lead = leadRepository.create({
-      ...req.body,
+   const lead = leadRepository.create({
+      ...leadFields,
       ...documentPaths,
-     // budgetRange:budget
-    });
+      subCategory,
+    } as DeepPartial<Leads>);
 
     const savedLead = await leadRepository.save(lead);
 
+    const fullLead = await leadRepository.findOne({
+      where: { id: savedLead.id },
+      relations: { subCategory: { category: true } },
+    });
+
     res.status(201).json({
       success: true,
-      data: savedLead,
+      data: fullLead ? formatLeadResponse(fullLead) : formatLeadResponse(savedLead),
     });
+
+
   } catch (error: any) {
     if (error.code === "23505") {
       return res.status(409).json({ success: false, message: "Email already exists" });
     }
     console.error("Create Lead Error:", error);
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       message: "Failed to create lead",
     });
   }
 };
-
-
-
-
 
 export const getAllLeads = async (req: Request, res: Response) => {
   try {
@@ -155,21 +171,20 @@ export const getLeadById = async (req: Request, res: Response) => {
 
 
 
-
-export const updateLeadByEmail = async (req: Request, res: Response) => {
+export const updateLeadById = async (req: Request, res: Response) => {
   try {
     const updatePayload = normalizeLeadUpdatePayload(req.body as Record<string, any>);
-    const email = updatePayload.email;
+    const id = updatePayload.id;
 
-    if (!email) {
+    if (!id) {
       return res.status(400).json({
         success: false,
-        message: "Email is required",
+        message: "Lead Id is required",
       });
     }
 
     const lead = await leadRepository.findOne({
-      where: { email },
+      where: { id },
     });
 
     if (!lead) {
@@ -179,39 +194,41 @@ export const updateLeadByEmail = async (req: Request, res: Response) => {
       });
     }
 
-    const { email: _email, ...leadData } = updatePayload;
+    const { id: _id, subCategoryId, ...leadData } = updatePayload;
 
-    leadRepository.merge(lead, leadData);
+    if (subCategoryId) {
+      const subRepo = AppDataSource.getRepository(SubCategory);
+      const subCategory = await subRepo.findOne({
+        where: { id: subCategoryId },
+        relations: { category: true },
+      });
 
-    const folderKey = (leadData.email ?? lead.email ?? "lead").toString().trim().toLowerCase() || "lead";
+      if (!subCategory) {
+        return res.status(404).json({
+          success: false,
+          message: "SubCategory not found",
+        });
+      }
 
-    const documentPaths = saveLeadFiles(
-      req.files as { [fieldname: string]: Express.Multer.File[] } | undefined,
-      folderKey
-    );
-
-    if (Object.keys(documentPaths).length > 0) {
-      leadRepository.merge(lead, documentPaths);
+      lead.subCategory = subCategory;
     }
 
+    leadRepository.merge(lead, leadData);
     const updatedLead = await leadRepository.save(lead);
 
     return res.status(200).json({
       success: true,
       message: "Lead updated successfully",
-      data: updatedLead,
+      data: formatLeadResponse(updatedLead),
     });
   } catch (error) {
     console.error("Update Lead Error:", error);
-
     return res.status(500).json({
       success: false,
       message: "Failed to update lead",
     });
   }
 };
-
-
 
 
 //
@@ -381,3 +398,4 @@ export const updateLeadsubCategory = async (req: Request, res: Response) => {
     });
 
 };
+
