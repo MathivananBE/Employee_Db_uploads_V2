@@ -11,6 +11,8 @@ import { auth } from "./middleware/auth";
 import { adminLogin } from "./controllers/adminLogin";
 import leadsRouter from "./routes/leadsRoutes";
 import categoryRoutes from "./routes/categoryRoutes";
+import projectRoutes from "./routes/projectRoutes";
+import leadSourceRoutes from "./routes/leadSourceRoutes";
 
 const app: Application = express();
 
@@ -54,6 +56,9 @@ app.use("/api/leads",leadsRouter)
 app.use("/api",categoryRoutes);
 
 
+
+app.use("/api/projects", projectRoutes);
+app.use("/api/leadSources", leadSourceRoutes);
 //app.use("/emp",router);
 
  

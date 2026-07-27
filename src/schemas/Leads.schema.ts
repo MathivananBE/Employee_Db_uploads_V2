@@ -31,11 +31,10 @@ export const createLeadSchema = z.object({
   .trim()
   .regex(/^[6-9]\d{9}$/, "Invalid phone number"),
   
-  project: z
+  projectId: z
     .string()
     .trim()
-    .min(2, "Project name must be at least 2 characters")
-    .max(100, "Project name is too long"),
+    .uuid("Invalid projectId"),
 
   location: z
     .string()
@@ -76,6 +75,11 @@ export const createLeadSchema = z.object({
     .string()
     .trim()
     .uuid("Invalid subCategoryId"),
+
+     leadSourceId: z
+    .string()
+    .trim()
+    .uuid("Invalid leadSourceId"),
 });
 
 export type CreateLeadInput = z.infer<typeof createLeadSchema>;

@@ -4,16 +4,23 @@ import Leads from "../entities/Leads";
 import { saveLeadFiles } from "../config/leadsConfig";
 import { SubCategory } from "../entities/subCategory";
 import { ILike, DeepPartial } from "typeorm";
+import { Project } from "../entities/Project";
+import { LeadSource } from "../entities/LeadSource";
+
 
 
 const leadRepository = AppDataSource.getRepository(Leads);
 
 // Leads only store a subcategory_id FK. Category info is derived through
 // SubCategory -> Category and flattened onto the response here.
-const SUBCATEGORY_RELATIONS = { subCategory: { category: true } };
+const LEAD_RELATIONS = {
+  subCategory: { category: true },
+  project: true,
+  leadSource: true,
+};
 
 const formatLeadResponse = (lead: Leads) => {
-  const { subCategory, ...rest } = lead as any;
+  const { subCategory, project, leadSource, ...rest } = lead as any;
 
   return {
     ...rest,
@@ -21,6 +28,10 @@ const formatLeadResponse = (lead: Leads) => {
     subCategoryName: subCategory?.name ?? null,
     categoryId: subCategory?.category?.id ?? null,
     categoryName: subCategory?.category?.name ?? null,
+    projectId: project?.id ?? null,
+    projectName: project?.name ?? null,
+    leadSourceId: leadSource?.id ?? null,
+    leadSourceName: leadSource?.name ?? null,
   };
 };
 
@@ -60,7 +71,7 @@ export const createLead = async (req: Request, res: Response) => {
   try {
     const files = req.files as { [fieldname: string]: Express.Multer.File[] } | undefined;
     const email = (req.body.email || "").toString().trim().toLowerCase();
-    const { subCategoryId, ...leadFields } = req.body;
+    const { subCategoryId, projectId, leadSourceId, ...leadFields } = req.body;
 
     const subRepo = AppDataSource.getRepository(SubCategory);
     const subCategory = await subRepo.findOne({
@@ -75,29 +86,48 @@ export const createLead = async (req: Request, res: Response) => {
       });
     }
 
-    // Buffers are only written to disk here, after validateLead + checkLeadExists have passed.
+    const projectRepo = AppDataSource.getRepository(Project);
+    const project = await projectRepo.findOne({ where: { id: projectId } });
+
+    if (!project) {
+      return res.status(404).json({
+        success: false,
+        message: "Project not found",
+      });
+    }
+
+    const leadSourceRepo = AppDataSource.getRepository(LeadSource);
+    const leadSource = await leadSourceRepo.findOne({ where: { id: leadSourceId } });
+
+    if (!leadSource) {
+      return res.status(404).json({
+        success: false,
+        message: "LeadSource not found",
+      });
+    }
+
     const folderKey = email || "lead";
     const documentPaths = saveLeadFiles(files, folderKey);
 
-   const lead = leadRepository.create({
+    const lead = leadRepository.create({
       ...leadFields,
       ...documentPaths,
       subCategory,
+      project,
+      leadSource,
     } as DeepPartial<Leads>);
 
     const savedLead = await leadRepository.save(lead);
 
     const fullLead = await leadRepository.findOne({
       where: { id: savedLead.id },
-      relations: { subCategory: { category: true } },
+      relations: LEAD_RELATIONS,
     });
 
     res.status(201).json({
       success: true,
       data: fullLead ? formatLeadResponse(fullLead) : formatLeadResponse(savedLead),
     });
-
-
   } catch (error: any) {
     if (error.code === "23505") {
       return res.status(409).json({ success: false, message: "Email already exists" });
@@ -113,10 +143,9 @@ export const createLead = async (req: Request, res: Response) => {
 export const getAllLeads = async (req: Request, res: Response) => {
   try {
     const leads = await leadRepository.find({
-      relations: SUBCATEGORY_RELATIONS,
-      order: {
-        id: "DESC",
-      },
+      relations: LEAD_RELATIONS,
+      order: { id: "DESC" },
+    
     });
 
     return res.status(200).json({
@@ -142,7 +171,7 @@ export const getLeadById = async (req: Request, res: Response) => {
 
     const lead = await leadRepository.findOne({
       where: { email },
-      relations: SUBCATEGORY_RELATIONS,
+      relations: LEAD_RELATIONS,
     });
 
     if (!lead) {
@@ -194,7 +223,7 @@ export const updateLeadById = async (req: Request, res: Response) => {
       });
     }
 
-    const { id: _id, subCategoryId, ...leadData } = updatePayload;
+    const { id: _id, subCategoryId, projectId, leadSourceId, ...leadData } = updatePayload;
 
     if (subCategoryId) {
       const subRepo = AppDataSource.getRepository(SubCategory);
@@ -213,8 +242,37 @@ export const updateLeadById = async (req: Request, res: Response) => {
       lead.subCategory = subCategory;
     }
 
+    if (projectId) {
+      const projectRepo = AppDataSource.getRepository(Project);
+      const project = await projectRepo.findOne({ where: { id: projectId } });
+
+      if (!project) {
+        return res.status(404).json({
+          success: false,
+          message: "Project not found",
+        });
+      }
+
+      lead.project = project;
+    }
+
+    if (leadSourceId) {
+      const leadSourceRepo = AppDataSource.getRepository(LeadSource);
+      const leadSource = await leadSourceRepo.findOne({ where: { id: leadSourceId } });
+
+      if (!leadSource) {
+        return res.status(404).json({
+          success: false,
+          message: "LeadSource not found",
+        });
+      }
+
+      lead.leadSource = leadSource;
+    }
+
     leadRepository.merge(lead, leadData);
     const updatedLead = await leadRepository.save(lead);
+    
 
     return res.status(200).json({
       success: true,
@@ -256,10 +314,12 @@ export const searchLeads = async (req: Request, res: Response) => {
 
     const pageNum = Math.max(1, parseInt(page, 10) || 1);
 
-    const query = leadRepository
+   const query = leadRepository
       .createQueryBuilder("lead")
       .leftJoinAndSelect("lead.subCategory", "subCategory")
-      .leftJoinAndSelect("subCategory.category", "category");
+      .leftJoinAndSelect("subCategory.category", "category")
+      .leftJoinAndSelect("lead.project", "project")
+      .leftJoinAndSelect("lead.leadSource", "leadSource");
 
     if (name && name.toString().trim()) {
       const term = `%${name.toString().trim()}%`;
@@ -290,6 +350,12 @@ export const searchLeads = async (req: Request, res: Response) => {
     if (location && location.toString().trim()) {
       query.andWhere("lead.location ILIKE :location", {
         location: `%${location.toString().trim()}%`,
+      });
+    }
+
+    if (project && project.toString().trim()) {
+      query.andWhere("project.name ILIKE :project", {
+        project: `%${project.toString().trim()}%`,
       });
     }
 

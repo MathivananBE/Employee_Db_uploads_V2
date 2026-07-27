@@ -5,6 +5,8 @@ import { EmployeesDetails } from "../entities/Employee";
 import Leads from "../entities/Leads";
 import { Category } from "../entities/categories";
 import { SubCategory } from "../entities/subCategory";
+import { Project } from "../entities/Project";
+import { LeadSource } from "../entities/LeadSource";
 
 validateEnv();
 
@@ -17,11 +19,13 @@ export const AppDataSource = new DataSource({
   database: env.db.database,
   synchronize: env.db.synchronize,
   logging: env.db.logging,
-    entities: [
+   entities: [
     EmployeesDetails,
     Leads,
     Category,
-    SubCategory
+    SubCategory,
+    Project,
+    LeadSource
   ],
   migrations: [__dirname + "/../migrations/*.{ts,js}"],
   subscribers: [],

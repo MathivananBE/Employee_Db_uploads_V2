@@ -9,6 +9,8 @@ import {
   JoinColumn
 } from "typeorm";
 import { SubCategory } from "./subCategory";
+import { Project } from "./Project";
+import { LeadSource } from "./LeadSource";
 
 @Entity({ name: "Leads" })
 export class Leads {
@@ -31,8 +33,9 @@ export class Leads {
   @Column({ name: "phone_number", type: "varchar", length: 15 })
   phoneNumber!: string;
 
-  @Column({ type: "varchar", length: 150 })
-  project!: string;
+  @ManyToOne(() => Project, (project) => project.leads)
+  @JoinColumn({ name: "project_id" })
+  project!: Project;
 
   @Column({ type: "varchar", length: 150 })
   location!: string;
@@ -46,10 +49,15 @@ export class Leads {
   @Column({ name: "property_type", type: "varchar", length: 100 })
   propertyType!: string;
 
+  @ManyToOne(() => LeadSource, (leadSource) => leadSource.leads)
+  @JoinColumn({ name: "lead_source_id" })
+  leadSource!: LeadSource;
+
    @ManyToOne(() => SubCategory, (subCategory) => subCategory.leads)
    @JoinColumn({ name: "subcategory_id" })
    subCategory!: SubCategory;
 
+   
   // ---------- Document Paths ----------
 
   @Column({
