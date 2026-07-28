@@ -3,10 +3,28 @@ import { ILike } from "typeorm";
 import { AppDataSource } from "../config/dataSource";
 import { EmployeesDetails } from "../entities/Employee";
 import { saveUploadedFiles } from "../config/upload";
+import { Department } from "../entities/Department";
+import { Designation } from "../entities/Designation";
 
 import bcrypt from "bcrypt";
 
 const employeeRepository = AppDataSource.getRepository(EmployeesDetails);
+const departmentRepository = AppDataSource.getRepository(Department);
+const designationRepository = AppDataSource.getRepository(Designation);
+
+// Flattens the nested department/designation relation objects into
+// department_id, department_name, designation_id, designation_name
+const formatEmployee = (employee: EmployeesDetails) => {
+  const { department, designation, ...rest } = employee as any;
+
+  return {
+    ...rest,
+    department_id: department?.id ?? null,
+    department_name: department?.name ?? null,
+    designation_id: designation?.id ?? null,
+    designation_name: designation?.name ?? null,
+  };
+};
 
 // Small reusable helper to avoid repeating error-handling logic everywhere
 const handleError = (res: Response, error: any, fallbackMessage: string) => {
@@ -29,29 +47,37 @@ const handleError = (res: Response, error: any, fallbackMessage: string) => {
 };
 
 // Create Employee
- export const  createEmployee = async (req: Request, res: Response) => {
+ export const createEmployee = async (req: Request, res: Response) => {
   try {
-    // Get uploaded file paths (e.g. resume, marksheets, ID docs)
     const hashedPassword = await bcrypt.hash(req.body.password, 10);
     const uploadedFiles = req.files as { [fieldname: string]: Express.Multer.File[] } | undefined;
     const documentPaths = saveUploadedFiles(uploadedFiles, req.body.empNo);
 
-    // Merge form data with file paths
-    const employeeData = {
-      ...req.body,
-      ...documentPaths,
-      password: hashedPassword
-    };
+    const department = await departmentRepository.findOne({ where: { id: req.body.departmentId } });
+    if (!department) {
+      return res.status(400).json({ success: false, message: "Invalid department" });
+    }
 
-    // Create and save the new employee record
+    const designation = await designationRepository.findOne({ where: { id: req.body.designationId } });
+    if (!designation) {
+      return res.status(400).json({ success: false, message: "Invalid designation" });
+    }
+
+    const { departmentId, designationId, ...rest } = req.body;
+
+    const employeeData = {
+      ...rest,
+      ...documentPaths,
+      password: hashedPassword,
+      department,
+      designation,
+    } as Partial<EmployeesDetails>;
+
     const newEmployee = employeeRepository.create(employeeData);
-    const savedEmployee = await employeeRepository.save(newEmployee);
+    const savedEmployee = await employeeRepository.save(newEmployee as EmployeesDetails);
 
     console.log("Employee created successfully:", savedEmployee);
-    res.status(201).json({
-      success: true,
-      data: savedEmployee,
-    });
+    res.status(201).json({ success: true, data: formatEmployee(savedEmployee) });
   } catch (error) {
     handleError(res, error, "Error creating employee");
   }
@@ -62,7 +88,11 @@ export const getAllEmployees = async (req: Request, res: Response) => {
   try {
     const employees = await employeeRepository.find();
     console.log(`Fetched ${employees.length} employees`);
-    res.status(200).json({ success: true, count: employees.length, data: employees });
+    res.status(200).json({
+      success: true,
+      count: employees.length,
+      data: employees.map(formatEmployee),
+    });
   } catch (error) {
     handleError(res, error, "Error fetching employees");
   }
@@ -79,7 +109,7 @@ export const getEmployeeById = async (req: Request, res: Response) => {
       return res.status(404).json({ success: false, message: "Employee not found" });
     }
     console.log(`Fetched employee with empNo: ${empNo}`);
-    return res.status(200).json({ success: true, data: employee });
+    return res.status(200).json({ success: true, data: formatEmployee(employee) });
   } catch (error) {
     return handleError(res, error, "Error fetching employee");
   }
@@ -108,7 +138,11 @@ export const updateEmployeeById = async (req: Request, res: Response) => {
 
     console.log("Employee updated successfully:", updatedEmployee);
 
-    return res.status(200).json({ success: true, message: "Employee updated successfully", data: updatedEmployee });
+    return res.status(200).json({
+      success: true,
+      message: "Employee updated successfully",
+      data: formatEmployee(updatedEmployee),
+    });
   } catch (error) {
     return handleError(res, error, "Error updating employee");
   }
@@ -135,7 +169,11 @@ export const updateEmployeeSalaryById = async (req: Request, res: Response) => {
 
      console.log(`Updated salary for employee ${empNo} to ${salary}`);
 
-    return res.status(200).json({ success: true, message: "Salary updated successfully", data: updatedEmployee });
+    return res.status(200).json({
+      success: true,
+      message: "Salary updated successfully",
+      data: formatEmployee(updatedEmployee),
+    });
   } catch (error) {
     return handleError(res, error, "Error updating salary");
   }
@@ -144,46 +182,45 @@ export const updateEmployeeSalaryById = async (req: Request, res: Response) => {
 // Get Employees by Department
 export const getEmployeesByDepartment = async (req: Request, res: Response) => {
   try {
-    const  department  = req.body.department;
+    const departmentId = req.body.departmentId;
 
     const employees = await employeeRepository.find({
-      where: { department: ILike(department) },
+      where: { department: { id: departmentId } },
     });
 
     if (employees.length === 0) {
-      return res.status(404).json({
-        success: false,
-        message: `No employees found in ${department} department.`,
-      });
+      return res.status(404).json({ success: false, message: "No employees found in this department." });
     }
 
-    console.log(`Fetched ${employees.length} employees in ${department} department.`);
-
-    return res.status(200).json({ success: true, count: employees.length, data: employees });
+    console.log(`Fetched ${employees.length} employees in department ${departmentId}.`);
+    return res.status(200).json({
+      success: true,
+      count: employees.length,
+      data: employees.map(formatEmployee),
+    });
   } catch (error) {
     return handleError(res, error, "Error fetching employees by department");
   }
 };
 
-// Get Employees by Designation
 export const getEmployeesByDesignation = async (req: Request, res: Response) => {
   try {
-    const  designation  = req.body.designation;
+    const designationId = req.body.designationId;
 
     const employees = await employeeRepository.find({
-      where: { designation: ILike(designation) },
+      where: { designation: { id: designationId } },
     });
 
     if (employees.length === 0) {
-      return res.status(404).json({
-        success: false,
-        message: `No employees found with designation '${designation}'.`,
-      });
+      return res.status(404).json({ success: false, message: "No employees found with this designation." });
     }
 
-     console.log(`Fetched ${employees.length} employees with designation '${designation}'.`);
-     
-    return res.status(200).json({ success: true, count: employees.length, data: employees });
+    console.log(`Fetched ${employees.length} employees with designation ${designationId}.`);
+    return res.status(200).json({
+      success: true,
+      count: employees.length,
+      data: employees.map(formatEmployee),
+    });
   } catch (error) {
     return handleError(res, error, "Error fetching employees by designation");
   }

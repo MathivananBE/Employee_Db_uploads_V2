@@ -49,17 +49,13 @@ export const createEmployeeSchema = z.object({
     .string()
     .regex(/^[6-9]\d{9}$/, "Invalid phone number"),
 
-  department: z
+ departmentId: z
     .string()
-    .trim()
-    .min(2)
-    .max(50),
+    .uuid("Invalid department id"),
 
-  designation: z
+  designationId: z
     .string()
-    .trim()
-    .min(2)
-    .max(50),
+    .uuid("Invalid designation id"),
 
   salary: z
     .coerce

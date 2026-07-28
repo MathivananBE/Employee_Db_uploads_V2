@@ -13,6 +13,8 @@ import leadsRouter from "./routes/leadsRoutes";
 import categoryRoutes from "./routes/categoryRoutes";
 import projectRoutes from "./routes/projectRoutes";
 import leadSourceRoutes from "./routes/leadSourceRoutes";
+import departmentRoutes from "./routes/departmentRoutes";
+import designationRoutes from "./routes/designationRoutes";
 
 const app: Application = express();
 
@@ -60,6 +62,10 @@ app.use("/api",categoryRoutes);
 app.use("/api/projects", projectRoutes);
 app.use("/api/leadSources", leadSourceRoutes);
 //app.use("/emp",router);
+
+
+app.use("/api/departments", departmentRoutes);
+app.use("/api/designations", designationRoutes);
 
  
 

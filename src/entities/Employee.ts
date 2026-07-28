@@ -6,7 +6,11 @@ import {
   UpdateDateColumn,
   Index,
   Check,
+  ManyToOne,
+  JoinColumn,
 } from "typeorm";
+import { Department } from "./Department";
+import { Designation } from "./Designation";
 
 @Entity({ name: "employeesDetails" })
 @Check(`"age" > 18`)
@@ -41,11 +45,13 @@ export class EmployeesDetails {
   @Column({ type: "varchar", length: 20, nullable: true })
   gender?: string | null;
 
-  @Column({ type: "varchar", length: 100 })
-  department!: string;
+  @ManyToOne(() => Department, (department) => department.employees, { eager: true })
+  @JoinColumn({ name: "department_id" })
+  department!: Department;
 
-  @Column({ type: "varchar", length: 100 })
-  designation!: string;
+  @ManyToOne(() => Designation, (designation) => designation.employees, { eager: true })
+  @JoinColumn({ name: "designation_id" })
+  designation!: Designation;
 
   @Column({ type: "numeric", precision: 12, scale: 2 })
   salary!: number;

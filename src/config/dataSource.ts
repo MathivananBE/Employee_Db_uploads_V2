@@ -7,6 +7,8 @@ import { Category } from "../entities/categories";
 import { SubCategory } from "../entities/subCategory";
 import { Project } from "../entities/Project";
 import { LeadSource } from "../entities/LeadSource";
+import { Department } from "../entities/Department";
+import { Designation } from "../entities/Designation";
 
 validateEnv();
 
@@ -25,7 +27,9 @@ export const AppDataSource = new DataSource({
     Category,
     SubCategory,
     Project,
-    LeadSource
+    LeadSource,
+    Department,
+    Designation
   ],
   migrations: [__dirname + "/../migrations/*.{ts,js}"],
   subscribers: [],
